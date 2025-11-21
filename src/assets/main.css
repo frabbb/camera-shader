@@ -1,0 +1,13 @@
+:root {
+  --s: 4px;
+  --m: 8px;
+  --l: 12px;
+  --xl: 24px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: monospace;
+}
