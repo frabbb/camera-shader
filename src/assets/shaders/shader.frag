@@ -12,6 +12,7 @@ uniform float uViewportX;
 uniform float uViewportY;
 
 uniform vec2 uViewport;
+uniform float uSteps;
 
 // Dato un colore ne restituisce la luminanza
 float getLuminance(vec3 col) {
@@ -54,7 +55,7 @@ void main() {
     uv.x *= uViewportX;
     uv.x += (1.0 - uViewportX) / 2.0;
 
-    vec2 correctedDensity = vec2(uDensity * uRatio, uDensity);  
+    vec2 correctedDensity = vec2(uDensity * uRatio / uViewportX, uDensity / uViewportY);  
 
     vec2 repeatedUv = repeatUv(uv, correctedDensity);
 
@@ -64,13 +65,17 @@ void main() {
 
     float luma = getLuminance (quantizedTextureRGB);
 
-    vec3 gradientMap = texture2D(uGradientTexture, quantizeUv(vec2(luma, 0.5), vec2(6.0, 1.0))+ vec2(1.0 / 12.0 , 0.0)).rgb;
+    // vec3 gradientMap = texture2D(uGradientTexture, quantizeUv(vec2(luma, 0.5), vec2(6.0, 1.0))+ vec2(1.0 / 12.0 , 0.0)).rgb;
 
-    float squareSize = luma * 0.8;
+    float lumaStep = floor(luma * uSteps) / uSteps;
 
-    float square = getSquare(repeatedUv, squareSize);
+    vec3 gradientMap = texture2D(uGradientTexture, vec2((1.0 - repeatedUv.x) / (uSteps) + (1.0 - lumaStep), repeatedUv.y)).rgb;
 
-    vec4 coloredSquare = vec4(gradientMap * square, 1.0); 
+    // float squareSize = luma * 0.8;
+
+    // float square = getSquare(repeatedUv, squareSize);
+
+    vec4 coloredSquare = vec4(gradientMap, 1.0); 
     
     gl_FragColor = coloredSquare; // Debug uv
     

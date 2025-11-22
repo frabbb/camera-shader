@@ -1,7 +1,7 @@
 <script setup>
 import { ref, watch, defineProps, onMounted } from "vue";
 import p5 from "p5";
-import testImageUrl from "@/assets/test.jpg"; // Import the image
+import textureUrl from "@/assets/gradient-1.jpg";
 import testShaderVertSrc from "@/assets/shaders/shader.vert";
 import testShaderFragSrc from "@/assets/shaders/shader.frag";
 
@@ -14,8 +14,9 @@ let capture;
 let shader;
 let frame;
 let texture;
-let density = 100;
+let density = 50;
 let ratio = 1;
+let steps = 4;
 
 const preload = async () => {
   const promises = [
@@ -25,7 +26,7 @@ const preload = async () => {
     }),
 
     new Promise((resolve) => {
-      p.loadImage(testImageUrl, (i) => {
+      p.loadImage(textureUrl, (i) => {
         texture = i;
         resolve();
       });
@@ -105,6 +106,7 @@ p.draw = () => {
   shader.setUniform("uGradientTexture", texture);
   shader.setUniform("uDensity", density);
   shader.setUniform("uRatio", ratio);
+  shader.setUniform("uSteps", steps);
 
   const viewportY = Math.min(p.height / (p.width / cameraRatio), 1.0);
   const viewportX = Math.min(p.width / (p.height * cameraRatio), 1.0);
