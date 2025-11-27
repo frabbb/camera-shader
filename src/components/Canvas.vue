@@ -102,6 +102,8 @@ p.draw = () => {
     p.noStroke();
     p.fill(255);
 
+    density = p.map(p.mouseX, 0, p.width, 1, 300);
+
     if (shader) {
       p.shader(shader);
       shader.setUniform("uTexture", capture);

@@ -27,7 +27,7 @@ onKeyStroke("Tab", (e) => {
   top: var(--l);
   left: 50%;
   transform: translateX(-50%);
-  width: 100%;
+  width: calc(100% - var(--l) * 2);
   max-width: 400px;
   display: flex;
   height: var(--2xl);

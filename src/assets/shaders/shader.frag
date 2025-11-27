@@ -67,7 +67,7 @@ void main() {
 
     // vec3 gradientMap = texture2D(uGradientTexture, quantizeUv(vec2(luma, 0.5), vec2(6.0, 1.0))+ vec2(1.0 / 12.0 , 0.0)).rgb;
 
-    float lumaStep = floor(luma * uSteps) / uSteps;
+    float lumaStep = floor(luma * uSteps) / uSteps + 1.0 / uSteps;
 
     vec3 gradientMap = texture2D(uGradientTexture, vec2((1.0 - repeatedUv.x) / (uSteps) + (1.0 - lumaStep), repeatedUv.y)).rgb;
 
