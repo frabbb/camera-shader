@@ -1,9 +1,18 @@
 <script setup>
 import { ref, watch, defineProps, onMounted } from "vue";
+import { onKeyStroke } from "@vueuse/core";
+
 import p5 from "p5";
 import textureUrl from "@/assets/gradient-1.jpg";
 import testShaderVertSrc from "@/assets/shaders/shader.vert";
 import testShaderFragSrc from "@/assets/shaders/shader.frag";
+
+const props = defineProps({
+  samplingMode: {
+    type: Boolean,
+    default: true,
+  },
+});
 
 const container = ref(null);
 
@@ -12,11 +21,15 @@ let canvas;
 let camera = { width: 0, height: 0 };
 let capture;
 let shader;
-let frame;
 let texture;
 let density = 50;
 let ratio = 1;
 let steps = 4;
+
+let graphics;
+let frameSize = 400;
+let framesN = 0;
+let selectedFrame = 0;
 
 const preload = async () => {
   const promises = [
@@ -59,72 +72,132 @@ p.setup = async () => {
   capture = p.createCapture(p.VIDEO, { flipped: true }, () => {
     camera.width = capture.elt.videoWidth;
     camera.height = capture.elt.videoHeight;
+    camera.ratio = camera.width / camera.height;
   });
 
   ratio = p.width / p.height;
+  graphics = p.createGraphics(frameSize, frameSize);
 };
 
 p.draw = () => {
   if (!camera.width || !camera.height) return;
 
-  const windowRatio = p.windowWidth / p.windowHeight;
-  const cameraRatio = camera.width / camera.height;
+  p.clear();
 
-  const source = {
-    x:
-      cameraRatio > windowRatio
-        ? (camera.width - camera.height * windowRatio) / 2
-        : 0,
-    y:
-      cameraRatio > windowRatio
-        ? 0
-        : (camera.height - camera.width / windowRatio) / 2,
-    width:
-      cameraRatio > windowRatio ? camera.height * windowRatio : camera.width,
-    height:
-      cameraRatio > windowRatio ? camera.height : camera.width / windowRatio,
+  if (props.samplingMode) {
+    p.resetShader();
+    const side = Math.min(p.width, p.height);
+    p.stroke(255);
+    p.strokeWeight(2);
+    p.noFill();
+    p.rect(0, 0, side, side);
+
+    let frameUiSize = 80;
+
+    p.push();
+    p.translate((-frameUiSize * framesN) / 2, -p.height / 2 + 72);
+    p.image(graphics, 0, 0, frameUiSize * framesN, frameUiSize);
+    p.pop();
+  } else {
+    p.noStroke();
+    p.fill(255);
+
+    if (shader) {
+      p.shader(shader);
+      shader.setUniform("uTexture", capture);
+      shader.setUniform("uGradientTexture", framesN > 0 ? graphics : texture);
+      shader.setUniform("uDensity", density);
+      shader.setUniform("uRatio", ratio);
+      shader.setUniform("uSteps", framesN > 0 ? framesN : steps);
+
+      const viewportY = Math.min(p.height / (p.width / camera.ratio), 1.0);
+      const viewportX = Math.min(p.width / (p.height * camera.ratio), 1.0);
+
+      shader.setUniform("uViewportX", viewportX);
+      shader.setUniform("uViewportY", viewportY);
+
+      p.rect(0, 0, 0, 0);
+    }
+  }
+};
+function sample() {
+  addFrame();
+
+  let source = {
+    x: camera.ratio > ratio ? (camera.width - camera.height * ratio) / 2 : 0,
+    y: camera.ratio > ratio ? 0 : (camera.height - camera.width / ratio) / 2,
+    width: camera.ratio > ratio ? camera.height * ratio : camera.width,
+    height: camera.ratio > ratio ? camera.height : camera.width / ratio,
   };
 
-  p.image(
+  const side = Math.min(source.width, source.height);
+  const x = source.x + (source.width - side) / 2;
+  const y = source.y + (source.height - side) / 2;
+
+  graphics.image(
     capture,
-    -p.width / 2,
-    -p.height / 2,
-    p.width,
-    p.height,
-    source.x,
-    source.y,
-    source.width,
-    source.height
+    selectedFrame * frameSize,
+    0,
+    frameSize,
+    frameSize,
+    x,
+    y,
+    side,
+    side
   );
 
-  frame = capture;
+  selectedFrame++;
+}
 
-  if (!shader) return;
+function addFrame() {
+  framesN++;
 
-  p.shader(shader);
-  shader.setUniform("uTexture", frame);
-  shader.setUniform("uGradientTexture", texture);
-  shader.setUniform("uDensity", density);
-  shader.setUniform("uRatio", ratio);
-  shader.setUniform("uSteps", steps);
+  const newGraphics = p.createGraphics(frameSize * framesN, frameSize);
+  newGraphics.image(graphics, 0, 0, graphics.width, graphics.height);
+  graphics = newGraphics;
+}
 
-  const viewportY = Math.min(p.height / (p.width / cameraRatio), 1.0);
-  const viewportX = Math.min(p.width / (p.height * cameraRatio), 1.0);
-
-  shader.setUniform("uViewportX", viewportX);
-  shader.setUniform("uViewportY", viewportY);
-
-  p.rect(0, 0, 0, 0);
-};
+onKeyStroke(" ", (e) => {
+  if (props.samplingMode) {
+    sample();
+  }
+});
 </script>
 
 <template>
-  <div class="canvas-container" ref="container"></div>
+  <div class="canvas-container" ref="container">
+    <button class="camera-button" v-show="samplingMode" @click="sample" />
+  </div>
 </template>
 
 <style>
 canvas {
   /* opacity: 0.5; */
+}
+
+.camera-button {
+  width: var(--2xl);
+  height: var(--2xl);
+  background-color: var(--white);
+  border-radius: 50%;
+  outline: 2px solid var(--white);
+  outline-offset: 1px;
+  cursor: pointer;
+  position: absolute;
+  z-index: 1;
+  bottom: var(--2xl);
+  left: 50%;
+  transform: translateX(-50%);
+
+  @media (hover: hover) {
+    &:hover {
+      opacity: 0.8;
+    }
+  }
+
+  &:active {
+    transform: translateX(-50%) scale(0.95);
+  }
 }
 
 .canvas-container,

@@ -3,6 +3,8 @@
   --m: 8px;
   --l: 12px;
   --xl: 24px;
+  --2xl: 48px;
+  --white: #ffffff;
 }
 
 * {
