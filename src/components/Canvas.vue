@@ -138,6 +138,7 @@ p.draw = () => {
 
     if (shader) {
       p.shader(shader);
+      shader.setUniform("uFlip", isPhone.value ? 0 : 1);
       shader.setUniform("uTexture", capture);
       shader.setUniform(
         "uGradientTexture",

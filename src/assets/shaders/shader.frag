@@ -13,6 +13,7 @@ uniform float uViewportY;
 
 uniform vec2 uViewport;
 uniform float uSteps;
+uniform float uFlip;
 
 // Dato un colore ne restituisce la luminanza
 float getLuminance(vec3 col) {
@@ -47,7 +48,7 @@ void main() {
     // uv
     vec2 uv = vTexCoord;
 
-    uv.x = 1.0 - uv.x;
+    uv.x = mix(uv.x, 1.0 - uv.x, uFlip);
    
     uv.y *= uViewportY;
     uv.y += (1.0 - uViewportY) / 2.0;
