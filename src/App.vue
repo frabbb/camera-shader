@@ -324,6 +324,7 @@ watch([scrubbing, elementX], () => {
     bottom: var(--2xl);
     left: 50%;
     transform: translateX(-50%);
+    transition: opacity 150ms ease-in-out;
 
     p {
       background: rgba(255, 255, 255, 0.5);

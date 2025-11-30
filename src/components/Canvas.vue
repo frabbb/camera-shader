@@ -84,11 +84,23 @@ p.setup = async () => {
   });
   resizeObserver.observe(container.value);
 
-  capture = p.createCapture(p.VIDEO, { flipped: true }, () => {
-    camera.width = capture.elt.videoWidth;
-    camera.height = capture.elt.videoHeight;
-    camera.ratio = camera.width / camera.height;
-  });
+  capture = p.createCapture(
+    p.VIDEO,
+    {
+      flipped: true,
+      audio: false,
+      video: {
+        facingMode: {
+          exact: "environment",
+        },
+      },
+    },
+    () => {
+      camera.width = capture.elt.videoWidth;
+      camera.height = capture.elt.videoHeight;
+      camera.ratio = camera.width / camera.height;
+    }
+  );
 
   ratio = p.width / p.height;
   graphics = p.createGraphics(frameSize, frameSize);
