@@ -84,16 +84,20 @@ p.setup = async () => {
   });
   resizeObserver.observe(container.value);
 
+  const isPhone = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
   capture = p.createCapture(
     p.VIDEO,
     {
       flipped: true,
       audio: false,
-      video: {
-        facingMode: {
-          exact: "environment",
+      ...(isPhone && {
+        video: {
+          facingMode: {
+            exact: "environment",
+          },
         },
-      },
+      }),
     },
     () => {
       camera.width = capture.elt.videoWidth;

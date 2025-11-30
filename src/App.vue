@@ -342,36 +342,30 @@ watch([scrubbing, elementX], () => {
     justify-content: center;
     gap: var(--s);
 
-    height: var(--l);
-
-    @media (hover: hover) {
-      &:hover {
-        .density-slider {
-          height: var(--l);
-        }
-      }
-    }
+    height: var(--xl);
   }
 
   .density-slider {
     width: 100%;
-    height: var(--m);
+
     background: rgba(255, 255, 255, 0.5);
     backdrop-filter: blur(10px);
-    border-radius: var(--m);
+    border-radius: var(--l);
     position: relative;
     cursor: pointer;
-    height: var(--m);
+    height: var(--l);
     transition: height 150ms ease-in-out;
 
     div {
       height: 100%;
       background: var(--white);
-      border-radius: var(--m);
+      border-radius: var(--l);
     }
 
-    &.scrubbing {
-      height: var(--l);
+    @media (hover: none) {
+      &.scrubbing {
+        height: var(--xl);
+      }
     }
   }
 
