@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, defineProps, onMounted } from "vue";
+import { ref, watch, onMounted } from "vue";
 import { onKeyStroke } from "@vueuse/core";
 
 import p5 from "p5";
@@ -12,6 +12,10 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
+  uiFrameSize: {
+    type: Number,
+    default: 80,
+  },
 });
 
 const container = ref(null);
@@ -21,15 +25,22 @@ let canvas;
 let camera = { width: 0, height: 0 };
 let capture;
 let shader;
-let texture;
+let defaultTexture;
 let density = 50;
 let ratio = 1;
-let steps = 4;
+let defaultSteps = 4;
 
 let graphics;
 let frameSize = 400;
-let framesN = 0;
-let selectedFrame = 0;
+
+const framesN = defineModel("framesN", {
+  type: Number,
+  default: 0,
+});
+
+const selectedFrame = defineModel("selectedFrame", {
+  type: Number,
+});
 
 const preload = async () => {
   const promises = [
@@ -40,7 +51,7 @@ const preload = async () => {
 
     new Promise((resolve) => {
       p.loadImage(textureUrl, (i) => {
-        texture = i;
+        defaultTexture = i;
         resolve();
       });
     }),
@@ -86,17 +97,16 @@ p.draw = () => {
 
   if (props.samplingMode) {
     p.resetShader();
-    const side = Math.min(p.width, p.height);
-    p.stroke(255);
-    p.strokeWeight(2);
-    p.noFill();
-    p.rect(0, 0, side, side);
-
-    let frameUiSize = 80;
 
     p.push();
-    p.translate((-frameUiSize * framesN) / 2, -p.height / 2 + 72);
-    p.image(graphics, 0, 0, frameUiSize * framesN, frameUiSize);
+    p.translate((-props.uiFrameSize * framesN.value) / 2, -p.height / 2 + 72);
+    p.image(
+      graphics,
+      0,
+      0,
+      props.uiFrameSize * framesN.value,
+      props.uiFrameSize
+    );
     p.pop();
   } else {
     p.noStroke();
@@ -107,10 +117,16 @@ p.draw = () => {
     if (shader) {
       p.shader(shader);
       shader.setUniform("uTexture", capture);
-      shader.setUniform("uGradientTexture", framesN > 0 ? graphics : texture);
+      shader.setUniform(
+        "uGradientTexture",
+        framesN.value > 0 ? graphics : defaultTexture
+      );
       shader.setUniform("uDensity", density);
       shader.setUniform("uRatio", ratio);
-      shader.setUniform("uSteps", framesN > 0 ? framesN : steps);
+      shader.setUniform(
+        "uSteps",
+        framesN.value > 0 ? framesN.value : defaultSteps
+      );
 
       const viewportY = Math.min(p.height / (p.width / camera.ratio), 1.0);
       const viewportX = Math.min(p.width / (p.height * camera.ratio), 1.0);
@@ -122,8 +138,11 @@ p.draw = () => {
     }
   }
 };
+
 function sample() {
-  addFrame();
+  if (selectedFrame.value === undefined) {
+    addFrame();
+  }
 
   let source = {
     x: camera.ratio > ratio ? (camera.width - camera.height * ratio) / 2 : 0,
@@ -136,9 +155,12 @@ function sample() {
   const x = source.x + (source.width - side) / 2;
   const y = source.y + (source.height - side) / 2;
 
+  console.log(selectedFrame.value);
+
   graphics.image(
     capture,
-    selectedFrame * frameSize,
+    (selectedFrame.value >= 0 ? selectedFrame.value - 1 : framesN.value) *
+      frameSize,
     0,
     frameSize,
     frameSize,
@@ -148,15 +170,17 @@ function sample() {
     side
   );
 
-  selectedFrame++;
+  // selectedFrame.value++;
 }
 
 function addFrame() {
-  framesN++;
+  const newFramesN = framesN.value + 1;
 
-  const newGraphics = p.createGraphics(frameSize * framesN, frameSize);
+  const newGraphics = p.createGraphics(frameSize * newFramesN, frameSize);
   newGraphics.image(graphics, 0, 0, graphics.width, graphics.height);
   graphics = newGraphics;
+
+  framesN.value = newFramesN;
 }
 
 onKeyStroke(" ", (e) => {
@@ -164,42 +188,19 @@ onKeyStroke(" ", (e) => {
     sample();
   }
 });
+
+defineExpose({
+  sample,
+});
 </script>
 
 <template>
-  <div class="canvas-container" ref="container">
-    <button class="camera-button" v-show="samplingMode" @click="sample" />
-  </div>
+  <div class="canvas-container" ref="container"></div>
 </template>
 
 <style>
 canvas {
   /* opacity: 0.5; */
-}
-
-.camera-button {
-  width: var(--2xl);
-  height: var(--2xl);
-  background-color: var(--white);
-  border-radius: 50%;
-  outline: 2px solid var(--white);
-  outline-offset: 1px;
-  cursor: pointer;
-  position: absolute;
-  z-index: 1;
-  bottom: var(--2xl);
-  left: 50%;
-  transform: translateX(-50%);
-
-  @media (hover: hover) {
-    &:hover {
-      opacity: 0.8;
-    }
-  }
-
-  &:active {
-    transform: translateX(-50%) scale(0.95);
-  }
 }
 
 .canvas-container,
