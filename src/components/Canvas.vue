@@ -169,8 +169,49 @@ function sample() {
     side,
     side
   );
+}
 
-  // selectedFrame.value++;
+function removeFrame(i) {
+  const newFramesN = framesN.value - 1;
+
+  framesN.value = newFramesN;
+
+  if (!newFramesN) {
+    graphics = p.createGraphics(frameSize, frameSize);
+
+    return;
+  }
+
+  const newGraphics = p.createGraphics(
+    frameSize * (framesN.value - 1),
+    frameSize
+  );
+
+  newGraphics.image(
+    graphics,
+    0,
+    0,
+    frameSize * (i - 1),
+    frameSize,
+    0,
+    0,
+    frameSize * (i - 1),
+    frameSize
+  );
+
+  newGraphics.image(
+    graphics,
+    frameSize * (i - 1),
+    0,
+    frameSize * (newFramesN + 1 - i),
+    frameSize,
+    frameSize * i,
+    0,
+    frameSize * (newFramesN + 1 - i),
+    frameSize
+  );
+
+  graphics = newGraphics;
 }
 
 function addFrame() {
@@ -191,6 +232,7 @@ onKeyStroke(" ", (e) => {
 
 defineExpose({
   sample,
+  removeFrame,
 });
 </script>
 

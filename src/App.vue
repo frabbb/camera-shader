@@ -33,6 +33,16 @@ onKeyStroke("Tab", (e) => {
 
 const sample = () => {
   canvasEl.value.sample();
+  selectedFrame.value = undefined;
+};
+
+const handleFrameClick = (i) => {
+  if (selectedFrame.value === i) {
+    canvasEl.value.removeFrame(i);
+    selectedFrame.value = undefined;
+  } else {
+    selectedFrame.value = i;
+  }
 };
 </script>
 
@@ -52,13 +62,14 @@ const sample = () => {
       class="frames-container"
       :style="{ '--size': `${size}px` }"
       ref="framesContainer"
+      @click="selectedFrame = undefined"
     >
-      <div class="frames" ref="framesEl" @click.stop>
+      <div class="frames" ref="framesEl">
         <div
           v-for="i in framesN"
           :key="i"
           class="frame"
-          @click="selectedFrame = i"
+          @click.stop="handleFrameClick(i)"
           :class="{ selected: i === selectedFrame }"
         >
           <div class="cross" v-show="i === selectedFrame">
