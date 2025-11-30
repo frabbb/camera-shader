@@ -108,7 +108,7 @@ p.setup = async () => {
     }
   );
 
-  container.value.appendChild(capture.elt);
+  capture.elt.classList.add(isPhone.value ? "is-phone" : "is-desktop");
 
   ratio = p.width / p.height;
   graphics = p.createGraphics(frameSize, frameSize);
@@ -294,17 +294,15 @@ video {
   object-fit: cover;
 }
 
-.canvas-container {
-  z-index: 1;
-
-  video {
-    transform: scaleX(-1);
-  }
+video {
+  transform: scaleX(-1);
 
   &.is-phone {
-    video {
-      transform: scaleX(1);
-    }
+    transform: scaleX(1);
   }
+}
+
+.canvas-container {
+  z-index: 1;
 }
 </style>
