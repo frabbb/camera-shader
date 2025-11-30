@@ -12,6 +12,10 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
+  density: {
+    type: Number,
+    default: 50,
+  },
   uiFrameSize: {
     type: Number,
     default: 80,
@@ -26,9 +30,9 @@ let camera = { width: 0, height: 0 };
 let capture;
 let shader;
 let defaultTexture;
-let density = 50;
 let ratio = 1;
 let defaultSteps = 4;
+const maxFrames = 20;
 
 let graphics;
 let frameSize = 400;
@@ -112,8 +116,6 @@ p.draw = () => {
     p.noStroke();
     p.fill(255);
 
-    density = p.map(p.mouseX, 0, p.width, 1, 300);
-
     if (shader) {
       p.shader(shader);
       shader.setUniform("uTexture", capture);
@@ -121,7 +123,7 @@ p.draw = () => {
         "uGradientTexture",
         framesN.value > 0 ? graphics : defaultTexture
       );
-      shader.setUniform("uDensity", density);
+      shader.setUniform("uDensity", props.density);
       shader.setUniform("uRatio", ratio);
       shader.setUniform(
         "uSteps",
@@ -155,8 +157,6 @@ function sample() {
   const x = source.x + (source.width - side) / 2;
   const y = source.y + (source.height - side) / 2;
 
-  console.log(selectedFrame.value);
-
   graphics.image(
     capture,
     (selectedFrame.value >= 0 ? selectedFrame.value - 1 : framesN.value) *
@@ -169,6 +169,8 @@ function sample() {
     side,
     side
   );
+
+  selectedFrame.value = undefined;
 }
 
 function removeFrame(i) {
@@ -215,6 +217,8 @@ function removeFrame(i) {
 }
 
 function addFrame() {
+  if (framesN.value >= maxFrames) return;
+
   const newFramesN = framesN.value + 1;
 
   const newGraphics = p.createGraphics(frameSize * newFramesN, frameSize);
@@ -227,6 +231,17 @@ function addFrame() {
 onKeyStroke(" ", (e) => {
   if (props.samplingMode) {
     sample();
+  }
+});
+
+onKeyStroke("Backspace", (e) => {
+  if (!props.samplingMode || !framesN.value) return;
+
+  if (selectedFrame.value !== undefined) {
+    removeFrame(selectedFrame.value);
+    selectedFrame.value = undefined;
+  } else {
+    removeFrame(framesN.value);
   }
 });
 

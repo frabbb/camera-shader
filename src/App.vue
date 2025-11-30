@@ -1,11 +1,12 @@
 <script setup>
 import Canvas from "./components/Canvas.vue";
-import { ref, computed, watch, onMounted } from "vue";
+import { ref, computed, watch } from "vue";
 import {
   onKeyStroke,
   useWindowSize,
   useElementSize,
-  onClickOutside,
+  useMouseInElement,
+  useEventListener,
 } from "@vueuse/core";
 
 const { width, height } = useWindowSize();
@@ -20,8 +21,10 @@ const framesN = ref(0);
 const selectedFrame = ref(undefined);
 
 const size = computed(() => {
+  const maxH = width.value > height.value ? 80 : framesContainerHeight.value;
+
   const maxW = framesContainerWidth.value / framesN.value;
-  return Math.min(maxW, framesContainerHeight.value);
+  return Math.min(maxW, maxH);
 });
 
 const samplingMode = ref(true);
@@ -44,6 +47,33 @@ const handleFrameClick = (i) => {
     selectedFrame.value = i;
   }
 };
+
+const densitySliderContainer = ref(null);
+const density = ref(50);
+const maxDensity = 300;
+const scrubbing = ref(false);
+const pendingDensity = ref(50);
+
+const { elementX, elementWidth } = useMouseInElement(densitySliderContainer);
+
+useEventListener("mouseup", () => (scrubbing.value = false), { passive: true });
+
+useEventListener("touchend", () => (scrubbing.value = false), {
+  passive: true,
+});
+
+watch([scrubbing, elementX], () => {
+  const progress = Math.max(
+    0,
+    Math.min(1, elementX.value / elementWidth.value)
+  );
+
+  pendingDensity.value = progress * maxDensity;
+
+  if (scrubbing.value) {
+    density.value = pendingDensity.value;
+  }
+});
 </script>
 
 <template>
@@ -85,9 +115,23 @@ const handleFrameClick = (i) => {
     <div class="camera-button-container">
       <button
         class="camera-button"
-        v-show="samplingMode"
         @click.stop="sample"
+        v-show="samplingMode"
       />
+    </div>
+
+    <div class="density">
+      <p>Density: {{ Math.round(density) }}</p>
+      <div ref="densitySliderContainer" class="density-slider-container">
+        <div
+          @mousedown="scrubbing = true"
+          @touchstart.passive="scrubbing = true"
+          class="density-slider"
+          :class="{ scrubbing }"
+        >
+          <div :style="{ width: `${(density / maxDensity) * 100}%` }"></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -96,6 +140,7 @@ const handleFrameClick = (i) => {
     v-model:framesN="framesN"
     v-model:selectedFrame="selectedFrame"
     :uiFrameSize="size"
+    :density="density"
     ref="canvasEl"
   />
 </template>
@@ -120,6 +165,8 @@ const handleFrameClick = (i) => {
     overflow: hidden;
     opacity: 0;
     transition: opacity 150ms ease-in-out;
+    position: relative;
+    z-index: 1;
   }
 
   .frames {
@@ -133,6 +180,7 @@ const handleFrameClick = (i) => {
       height: var(--size);
       border: 1px solid var(--white);
       position: relative;
+      cursor: pointer;
 
       &:not(:last-child) {
         border-right: none;
@@ -140,6 +188,12 @@ const handleFrameClick = (i) => {
 
       &.selected {
         background: rgba(255, 255, 255, 0.2);
+      }
+
+      @media (hover: hover) {
+        &:hover {
+          background: rgba(255, 255, 255, 0.2);
+        }
       }
 
       .cross {
@@ -156,7 +210,7 @@ const handleFrameClick = (i) => {
           top: 50%;
           left: 50%;
           width: 50%;
-          height: 1px;
+          height: 2px;
           background: var(--white);
         }
 
@@ -246,6 +300,8 @@ const handleFrameClick = (i) => {
     outline: 2px solid var(--white);
     outline-offset: 1px;
     cursor: pointer;
+    position: relative;
+    z-index: 1;
 
     @media (hover: hover) {
       &:hover {
@@ -255,6 +311,66 @@ const handleFrameClick = (i) => {
 
     &:active {
       transform: scale(0.95);
+    }
+  }
+
+  .density {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--m);
+    width: calc(100% - var(--l) * 2);
+    position: absolute;
+    bottom: var(--2xl);
+    left: 50%;
+    transform: translateX(-50%);
+
+    p {
+      background: rgba(255, 255, 255, 0.5);
+      backdrop-filter: blur(10px);
+      border-radius: var(--m);
+      padding: var(--m);
+    }
+  }
+
+  .density-slider-container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--s);
+
+    height: var(--l);
+
+    @media (hover: hover) {
+      &:hover {
+        .density-slider {
+          height: var(--l);
+        }
+      }
+    }
+  }
+
+  .density-slider {
+    width: 100%;
+    height: var(--m);
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(10px);
+    border-radius: var(--m);
+    position: relative;
+    cursor: pointer;
+    height: var(--m);
+    transition: height 150ms ease-in-out;
+
+    div {
+      height: 100%;
+      background: var(--white);
+      border-radius: var(--m);
+    }
+
+    &.scrubbing {
+      height: var(--l);
     }
   }
 
@@ -269,6 +385,18 @@ const handleFrameClick = (i) => {
       left: 50%;
       transform: translateX(-50%);
     }
+
+    .frames-container {
+      width: 100vh;
+      position: absolute;
+      top: 72px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .density {
+      bottom: var(--l);
+    }
   }
 
   &.sampling-mode {
@@ -282,6 +410,10 @@ const handleFrameClick = (i) => {
 
     .square {
       opacity: 1;
+    }
+
+    .density {
+      opacity: 0;
     }
   }
 }
