@@ -89,8 +89,10 @@ p.setup = async () => {
   capture = p.createCapture(
     p.VIDEO,
     {
-      flipped: true,
       audio: false,
+      ...(!isPhone && {
+        flipped: true,
+      }),
       ...(isPhone && {
         video: {
           facingMode: {
