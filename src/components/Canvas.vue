@@ -22,6 +22,8 @@ const props = defineProps({
   },
 });
 
+const isPhone = ref(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
+
 const container = ref(null);
 
 const p = new p5((p) => p);
@@ -84,16 +86,14 @@ p.setup = async () => {
   });
   resizeObserver.observe(container.value);
 
-  const isPhone = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
   capture = p.createCapture(
     p.VIDEO,
     {
       audio: false,
-      ...(!isPhone && {
+      ...(!isPhone.value && {
         flipped: true,
       }),
-      ...(isPhone && {
+      ...(isPhone.value && {
         video: {
           facingMode: {
             exact: "environment",
@@ -107,6 +107,8 @@ p.setup = async () => {
       camera.ratio = camera.width / camera.height;
     }
   );
+
+  container.value.appendChild(capture.elt);
 
   ratio = p.width / p.height;
   graphics = p.createGraphics(frameSize, frameSize);
@@ -270,7 +272,11 @@ defineExpose({
 </script>
 
 <template>
-  <div class="canvas-container" ref="container"></div>
+  <div
+    class="canvas-container"
+    ref="container"
+    :class="{ 'is-phone': isPhone }"
+  ></div>
 </template>
 
 <style>
@@ -288,11 +294,17 @@ video {
   object-fit: cover;
 }
 
-video {
-  transform: scaleX(-1);
-}
-
 .canvas-container {
   z-index: 1;
+
+  video {
+    transform: scaleX(-1);
+  }
+
+  &.is-phone {
+    video {
+      transform: scaleX(1);
+    }
+  }
 }
 </style>
